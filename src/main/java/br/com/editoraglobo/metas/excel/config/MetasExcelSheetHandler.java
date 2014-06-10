@@ -1,7 +1,9 @@
 package br.com.editoraglobo.metas.excel.config;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import org.apache.poi.xssf.model.SharedStringsTable;
 import org.apache.poi.xssf.usermodel.XSSFRichTextString;
@@ -15,12 +17,17 @@ import br.com.editoraglobo.metas.excel.model.MonthType;
 /** 
  * See org.xml.sax.helpers.DefaultHandler javadocs 
  */ 
-public class MetasExecelSheetHandler extends DefaultHandler {
+public class MetasExcelSheetHandler extends DefaultHandler {
 	
 	/**
 	 * 
 	 */
 	private SharedStringsTable sst;
+	
+	/**
+	 * 
+	 */
+	private MetasExcelConfig config;
 	
 	/**
 	 * 
@@ -35,12 +42,7 @@ public class MetasExecelSheetHandler extends DefaultHandler {
 	/**
 	 * 
 	 */
-	private final MetasExcelConfig config = new MetasExcelConfig();
-	
-	/**
-	 * 
-	 */
-	private GrupoMetas grupoMetas;
+	private GrupoMetas currentGrupoMetas;
 	
 	/**
 	 * 
@@ -52,12 +54,16 @@ public class MetasExecelSheetHandler extends DefaultHandler {
 	 */
 	private String currentExecutivo;
 	
+	// TODO analisar se será necessário manter essa lista
+	List<GrupoMetas> repositorioMetas = new ArrayList<GrupoMetas>();
+	
 	
 	/**
 	 * @param sst
 	 */
-	public MetasExecelSheetHandler(SharedStringsTable sst) {
+	public MetasExcelSheetHandler(SharedStringsTable sst, MetasExcelConfig config) {
 		this.sst = sst;
+		this.config = config;
 	}
 	
 	/* (non-Javadoc)
@@ -74,7 +80,7 @@ public class MetasExecelSheetHandler extends DefaultHandler {
 			// e se a linha está no intervalo permitido
 			// e se não não é linha em branco no fim de cada grupo
 			if (config.getCurrentCell().getRow() > config.getSkipRows()
-					&& config.getCurrentCell().getRow() <= config.getMaxRow()
+					&& config.getCurrentCell().getRow() <= config.getLimitRow()
 					&& !config.isLinhaEmBranco()) {
 				
 				final String cellType = attributes.getValue("t");
@@ -114,7 +120,7 @@ public class MetasExecelSheetHandler extends DefaultHandler {
 		// e se a linha está no intervalo permitido
 		// e se não não é linha em branco no fim de cada grupo
 		if (config.getCurrentCell().getRow() > config.getSkipRows()
-				&& config.getCurrentCell().getRow() <= config.getMaxRow()
+				&& config.getCurrentCell().getRow() <= config.getLimitRow()
 				&& !config.isLinhaEmBranco()) {
 			
 
@@ -128,40 +134,40 @@ public class MetasExecelSheetHandler extends DefaultHandler {
 			if (config.isNovoGrupo() && name.equals("v")) {
 				// cria novo grupo
 				currentGrupo = lastContents;
-				this.grupoMetas = new GrupoMetas(currentGrupo);
+				this.currentGrupoMetas = new GrupoMetas(currentGrupo);
 			
 			} else if (config.isNovoExecutivo() && name.equals("v")) {
 				// cria novo executivo
 				currentExecutivo = lastContents;
 				
-				this.grupoMetas.getExecutivosMetasEditora().put(
+				this.currentGrupoMetas.getExecutivosMetasEditora().put(
 						currentExecutivo, new HashMap<MonthType, BigDecimal>());
 				
-				this.grupoMetas.getExecutivosMetasDiretor().put(
+				this.currentGrupoMetas.getExecutivosMetasDiretor().put(
 						currentExecutivo, new HashMap<MonthType, BigDecimal>());
 			
 			} else if (config.isMetaEditora() && name.equals("v")) {
 				
 				// adiciona meta editora
 				if (currentExecutivo != null 
-						&& this.grupoMetas.getExecutivosMetasEditora().containsKey(currentExecutivo)) {
+						&& this.currentGrupoMetas.getExecutivosMetasEditora().containsKey(currentExecutivo)) {
 					
-					this.grupoMetas.getExecutivosMetasEditora().get(currentExecutivo).put(
+					this.currentGrupoMetas.getExecutivosMetasEditora().get(currentExecutivo).put(
 							config.getMonthHeaderEditora(), new BigDecimal(lastContents.replaceAll(",", "")));
 				}
 
 			} else if (config.isMetaDiretor() && name.equals("v")) {
 				// adiciona meta diretor
-				if (currentExecutivo != null && this.grupoMetas.getExecutivosMetasDiretor().containsKey(currentExecutivo)) {
-					this.grupoMetas.getExecutivosMetasDiretor().get(currentExecutivo).put(
+				if (currentExecutivo != null && this.currentGrupoMetas.getExecutivosMetasDiretor().containsKey(currentExecutivo)) {
+					this.currentGrupoMetas.getExecutivosMetasDiretor().get(currentExecutivo).put(
 						config.getMonthHeaderDiretor(), new BigDecimal(lastContents.replaceAll(",", "")));
 				}
 
 			} else if (config.isFimGrupo() && name.equals("v")) {
-				// TODO copia a metaTO para o repositorio de metas parseads
-				// TODO resetar metaTO
-				// TODO chechar se name.equals("v") será necessário
-				System.out.println(grupoMetas);
+				// adiciona grupoMetas na lista parseada
+				repositorioMetas.add(currentGrupoMetas);
+				// resetando currentGrupoMetas
+				currentGrupoMetas = null;
 			}
 		}
 	}

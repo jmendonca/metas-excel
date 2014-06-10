@@ -13,7 +13,8 @@ import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
 
-import br.com.editoraglobo.metas.excel.config.MetasExecelSheetHandler;
+import br.com.editoraglobo.metas.excel.config.MetasExcelConfig;
+import br.com.editoraglobo.metas.excel.config.MetasExcelSheetHandler;
 
 
 public class MetasExcelService {
@@ -107,7 +108,7 @@ public class MetasExcelService {
 		XMLReader parser =
 			XMLReaderFactory.createXMLReader(
 					"org.apache.xerces.parsers.SAXParser");
-		ContentHandler handler = new MetasExecelSheetHandler(sst);
+		ContentHandler handler = new MetasExcelSheetHandler(sst, new MetasExcelConfig());
 		parser.setContentHandler(handler);
 		return parser;
 	}
